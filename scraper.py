@@ -1,0 +1,199 @@
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+
+
+class UMinhoDSpace8Scraper:
+    def __init__(self, base_url, max_items=10):
+        """
+        Initialize the web scraper with Selenium WebDriver configuration.
+        Args:
+            base_url (str): The base URL of the website to scrape.
+            max_items (int, optional): Maximum number of items to scrape. Defaults to 10.
+        Note:
+            Requires Chrome executable. If using a standard Chrome installation,
+            modify chrome_options.binary_location accordingly or remove it if Chrome is in PATH.
+            For Chrome binaries, visit: https://googlechromelabs.github.io/chrome-for-testing/#stable
+        """
+        self.base_url = base_url
+        
+        chrome_options = Options()
+        # Set the path to your portable Chrome executable here if you don't have it in PATH (You don't need this if Chrome is installed normally)
+        # Also check: https://googlechromelabs.github.io/chrome-for-testing/#stable for downloading Chrome binaries if don't want to install
+        chrome_options.binary_location = r"D:\Portable\chrome\chrome.exe"
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        
+        self.driver = webdriver.Chrome(options=chrome_options)
+        self.wait = WebDriverWait(self.driver, 10)
+
+        # Time to wait for Angular to settle after page loads
+        self.ANGULAR_SETTLE_TIME = 0.5  # seconds
+        # Max items to scrape
+        self.MAX_ITEMS = max_items
+
+    def get_paper_info(self, url):
+        """
+        Given a paper URL, navigates to it and extracts metadata from the table.
+        """
+        self.driver.get(url)
+        # Wait for the table to appear
+        self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table.table-striped")))
+        time.sleep(self.ANGULAR_SETTLE_TIME) # Angular settle time
+        
+        # Dictionary to store the mapping we want
+        # This is our "Shopping List" - Key: what the HTML says, Value: what we want in our JSON
+        targets = {
+            "dc.title": "title",
+            "dc.date.issued": "year",
+            "dc.identifier.doi": "doi",
+            "dc.contributor.author": "authors",
+            "dc.description.abstract": "abstract"
+        }
+        
+        data = { "title": "N/A", "year": "N/A", "doi": "N/A", "abstract": "N/A", "authors": [] }
+
+        try:
+            # Locate all rows in the metadata table
+            rows = self.driver.find_elements(By.CSS_SELECTOR, "table.table-striped tbody tr")
+            
+            for row in rows:
+                cols = row.find_elements(By.TAG_NAME, "td")
+                if len(cols) >= 2:
+                    field_label = cols[0].text.strip()
+                    field_value = cols[1].text.strip()
+
+                    if field_label in targets:
+                        key = targets[field_label]
+                        if key == "authors":
+                            data[key].append(field_value)
+                        else:
+                            data[key] = field_value
+
+        except Exception as e:
+            print(f"Error parsing table: {e}")
+        
+        return data
+
+    def go_to_next_page(self):
+        """
+        Attempts to click the next page button. 
+        Raises NoSuchElementException if the button is missing or disabled.
+        """
+        # XPath looking for an active (not disabled) 'Next' button
+        next_button_xpath = "//li[contains(@class, 'page-item') and not(contains(@class, 'disabled'))]/a[@aria-label='Next']"
+        
+        try:
+            next_button = self.driver.find_element(By.XPATH, next_button_xpath)
+            
+            # Scroll and Click
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_button)
+            next_button.click()
+            
+            # Wait for Angular to swap the content, Slightly longer wait after clicking 
+            time.sleep(self.ANGULAR_SETTLE_TIME + 1)  
+            return True
+            
+        except NoSuchElementException:
+            # Re-raising the exception so the caller knows to stop the loop
+            raise NoSuchElementException("Reached the last page: 'Next' button is missing or disabled.")
+
+    def collect_all_links(self):
+        """
+        Iterates through pagination to collect paper URLs up to self.MAX_ITEMS.
+        1. Loads the initial collection page.
+        2. Extracts paper links from each item on the page.
+        3. Navigates to the next page until no more pages or limit reached.
+        4. Returns a list of unique paper URLs.
+        """
+        paper_urls = []
+
+        # Load the initial collection page
+        self.driver.get(self.base_url)
+
+        # Wait for the Angular component that holds the item list
+        print("Waiting for Angular to populate the item list...")
+        self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "ds-listable-object-component-loader")))
+        
+        # Give it a moment to render the links inside those components
+        time.sleep(self.ANGULAR_SETTLE_TIME)
+
+        while True:
+            
+            # 1. Locate all paper containers on the current page
+            items = self.driver.find_elements(By.TAG_NAME, "ds-listable-object-component-loader")
+
+            # Handle cases where the page didn't load any items
+            if not items:
+                if not paper_urls:
+                    print("Error: Could not find any item links in the list.")
+                    return []
+                print("No items found on this page. Stopping pagination.")
+                break
+
+            # 2. Extract links from each item
+            for item in items:
+                try:
+                    title_elem = item.find_element(By.CSS_SELECTOR, "a.item-list-title")
+                    href = title_elem.get_attribute("href")
+
+                    if href:
+                        # Clean the URL (removes ?show=full etc.)
+                        clean_url = href.split('?')[0]
+                        
+                        if clean_url not in paper_urls:
+                            paper_urls.append(clean_url)
+                            print(f"  [{len(paper_urls)}] Found: {clean_url}")
+
+                    # Stop immediately if we hit the limit
+                    if len(paper_urls) >= self.MAX_ITEMS:
+                        print(f"Reached limit of {self.MAX_ITEMS} items.")
+                        return paper_urls
+
+                except NoSuchElementException:
+                    continue # Skip items that don't have a title link
+
+            # 3. Attempt to move to the next page
+            try:
+                self.go_to_next_page()
+            except NoSuchElementException:
+                print("No more pages to scrape.")
+                break
+
+        return paper_urls
+
+    def scrape(self):
+        """
+        Main method to scrape the collection and extract metadata for each paper.
+        """
+        results = []     # To store final results
+        paper_urls = []  # To store unique paper URLs
+        
+        print(f"Loading collection list: {self.base_url}") # Debug print
+       
+        try:
+            
+            # Collect paper links across paginated collection
+            paper_urls = self.collect_all_links()
+
+            print(f"Found {len(paper_urls)} papers. Extracting metadata...") # Debug print
+            
+            # Visit each paper to get the abstract and authors
+            for url in paper_urls:
+                # print(f"   Opening Paper: {url}")               # Debug print
+                full_url = url + "/full"                        # add '/full' to get the full metadata view
+                paper_info = self.get_paper_info(full_url)      # get the paper info
+                print(f"      Title: {paper_info['title']}")    # Debug print
+                results.append(paper_info)
+
+        finally:
+            self.driver.quit()
+            
+        return results
