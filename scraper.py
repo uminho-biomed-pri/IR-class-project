@@ -1,12 +1,35 @@
 import time
 import os
 import platform
+import shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
+
+
+def is_valid_executable(path):
+    """
+    Check if a path points to a valid executable file.
+    
+    Args:
+        path (str): Path to check.
+    
+    Returns:
+        bool: True if the path is a valid executable file, False otherwise.
+    """
+    if not os.path.isfile(path):
+        return False
+    
+    # On Windows, os.access with os.X_OK may not work reliably
+    # so we just check if the file exists
+    if platform.system() == "Windows":
+        return True
+    
+    # On Unix-like systems, check if the file is executable
+    return os.access(path, os.X_OK)
 
 
 def find_chrome_executable():
@@ -64,12 +87,11 @@ def find_chrome_executable():
     
     # Check each path
     for chrome_path in chrome_paths:
-        if os.path.isfile(chrome_path) and os.access(chrome_path, os.X_OK):
+        if is_valid_executable(chrome_path):
             print(f"Found Chrome at: {chrome_path}")
             return chrome_path
     
     # If not found in common locations, check if 'google-chrome' or 'chromium' is in PATH
-    import shutil
     for executable in ['google-chrome', 'chromium', 'chromium-browser', 'chrome']:
         chrome_in_path = shutil.which(executable)
         if chrome_in_path:
@@ -103,7 +125,7 @@ class UMinhoDSpace8Scraper:
         
         # If Chrome not found and portable path is provided, use it
         if chrome_path is None and portable_chrome_path is not None:
-            if os.path.isfile(portable_chrome_path) and os.access(portable_chrome_path, os.X_OK):
+            if is_valid_executable(portable_chrome_path):
                 chrome_path = portable_chrome_path
                 print(f"Using portable Chrome at: {chrome_path}")
             else:
