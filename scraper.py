@@ -1,4 +1,6 @@
 import time
+import os
+import platform
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -7,24 +9,112 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 
+def find_chrome_executable():
+    """
+    Attempts to find Chrome executable in common installation locations.
+    
+    Checks for Chrome in default installation paths on both Windows and Linux.
+    Returns the path to the Chrome executable if found, otherwise returns None.
+    
+    Returns:
+        str or None: Path to Chrome executable if found, None otherwise.
+    """
+    system = platform.system()
+    
+    # List of common Chrome executable paths
+    chrome_paths = []
+    
+    if system == "Windows":
+        # Windows default installation paths
+        possible_paths = [
+            # Chrome stable
+            os.path.join(os.environ.get('PROGRAMFILES', 'C:\\Program Files'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\\Program Files (x86)'), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
+            # Chromium
+            os.path.join(os.environ.get('PROGRAMFILES', 'C:\\Program Files'), 'Chromium', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('PROGRAMFILES(X86)', 'C:\\Program Files (x86)'), 'Chromium', 'Application', 'chrome.exe'),
+            os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Chromium', 'Application', 'chrome.exe'),
+        ]
+        chrome_paths.extend(possible_paths)
+        
+    elif system == "Linux":
+        # Linux default installation paths
+        possible_paths = [
+            '/usr/bin/google-chrome',
+            '/usr/local/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/local/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser',
+            '/usr/local/bin/chromium',
+            '/usr/local/bin/chromium-browser',
+            '/snap/bin/chromium',
+            '/opt/google/chrome/chrome',
+            '/opt/google/chrome/google-chrome',
+        ]
+        chrome_paths.extend(possible_paths)
+        
+    elif system == "Darwin":  # macOS
+        possible_paths = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium',
+        ]
+        chrome_paths.extend(possible_paths)
+    
+    # Check each path
+    for chrome_path in chrome_paths:
+        if os.path.isfile(chrome_path) and os.access(chrome_path, os.X_OK):
+            print(f"Found Chrome at: {chrome_path}")
+            return chrome_path
+    
+    # If not found in common locations, check if 'google-chrome' or 'chromium' is in PATH
+    import shutil
+    for executable in ['google-chrome', 'chromium', 'chromium-browser', 'chrome']:
+        chrome_in_path = shutil.which(executable)
+        if chrome_in_path:
+            print(f"Found Chrome in PATH: {chrome_in_path}")
+            return chrome_in_path
+    
+    print("Chrome not found in default locations.")
+    return None
+
+
 class UMinhoDSpace8Scraper:
-    def __init__(self, base_url, max_items=10):
+    def __init__(self, base_url, max_items=10, portable_chrome_path=None):
         """
         Initialize the web scraper with Selenium WebDriver configuration.
         Args:
             base_url (str): The base URL of the website to scrape.
             max_items (int, optional): Maximum number of items to scrape. Defaults to 10.
+            portable_chrome_path (str, optional): Path to portable Chrome executable if Chrome is not installed.
+                                                  Only used as fallback if Chrome is not found in default locations.
         Note:
-            Requires Chrome executable. If using a standard Chrome installation,
-            modify chrome_options.binary_location accordingly or remove it if Chrome is in PATH.
+            Automatically detects Chrome in default installation locations on Windows and Linux.
+            Falls back to portable Chrome executable if provided and Chrome is not found.
             For Chrome binaries, visit: https://googlechromelabs.github.io/chrome-for-testing/#stable
         """
         self.base_url = base_url
         
         chrome_options = Options()
-        # Set the path to your portable Chrome executable here if you don't have it in PATH (You don't need this if Chrome is installed normally)
-        # Also check: https://googlechromelabs.github.io/chrome-for-testing/#stable for downloading Chrome binaries if don't want to install
-        chrome_options.binary_location = r"D:\Portable\chrome\chrome.exe"
+        
+        # Try to find Chrome in default installation locations
+        chrome_path = find_chrome_executable()
+        
+        # If Chrome not found and portable path is provided, use it
+        if chrome_path is None and portable_chrome_path is not None:
+            if os.path.isfile(portable_chrome_path) and os.access(portable_chrome_path, os.X_OK):
+                chrome_path = portable_chrome_path
+                print(f"Using portable Chrome at: {chrome_path}")
+            else:
+                print(f"Warning: Portable Chrome path '{portable_chrome_path}' does not exist or is not executable.")
+        
+        # Set the binary location if a specific path was found
+        if chrome_path:
+            chrome_options.binary_location = chrome_path
+        else:
+            print("Warning: Chrome executable not found. Attempting to use system default (may fail if Chrome is not in PATH).")
+        
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--disable-gpu")

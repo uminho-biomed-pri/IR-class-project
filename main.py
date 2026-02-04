@@ -8,6 +8,9 @@ def main():
     base_url = f"{repo_url}/{collection}"
     
     # Create an instance of the Scraper class
+    # The scraper will automatically detect Chrome in default locations
+    # If you want to use a portable Chrome, pass the path as portable_chrome_path parameter:
+    # scraper_instance = scraper.UMinhoDSpace8Scraper(base_url, max_items=2, portable_chrome_path=r"D:\Portable\chrome\chrome.exe")
     scraper_instance = scraper.UMinhoDSpace8Scraper(base_url, max_items=2)
     final_results = scraper_instance.scrape()
     
