@@ -155,17 +155,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### 4. Configure the Application
-
-```bash
-# Copy example configuration
-cp .env.example .env
-
-# Edit .env with your settings
-# Set Chrome binary path, database connection, etc.
-```
-
-#### 5. Run the Scraper
+#### 4. Run the Scraper
 
 ```bash
 # Run scraper with default settings
