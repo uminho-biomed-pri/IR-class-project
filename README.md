@@ -23,7 +23,7 @@ A comprehensive web application for searching and discovering research publicati
 
 ## 🎯 Overview
 
-This project is a collaborative educational initiative that implements a full-stack research publication search system. The system scrapes academic publications from DSpace repositories, processes them using NLP techniques, and provides a user-friendly web interface for searching and exploring the content.
+This project is a collaborative educational initiative that implements a full-stack research publication search system. The system scrapes academic publications from [UMinho repositories](https://repositorium.uminho.pt/), processes them using NLP techniques, and provides a user-friendly web interface for searching and exploring the content.
 
 **Key Capabilities:**
 - 🔍 Advanced search with natural language processing
@@ -38,7 +38,7 @@ This project is a collaborative educational initiative that implements a full-st
 ## ✨ Features
 
 ### Data Collection
-- **Web Scraper**: Automated collection from DSpace 8 repositories
+- **Web Scraper**: Automated collection from [UMinho repositories](https://repositorium.uminho.pt/)
 - **Metadata Extraction**: Title, authors, abstract, DOI, publication date
 - **Pagination Handling**: Efficient navigation through large collections
 - **Error Recovery**: Robust handling of network issues and timeouts
@@ -70,7 +70,7 @@ This project is a collaborative educational initiative that implements a full-st
 ## 📁 Project Structure (EXAMPLE)
 
 ```
-dspace-scraper/
+UMinho-scraper/
 ├── src/                        # Source code
 │   ├── scraper/               # Web scraping module
 │   │   ├── scraper.py        # Main scraper class
@@ -136,7 +136,7 @@ Before you begin, ensure you have:
 ```bash
 # Clone your team's fork
 git clone https://github.com/YOUR_TEAM/IR-class-project.git
-cd dspace-scraper
+cd IR-class-project
 ```
 
 #### 3. Set Up Development Environment
