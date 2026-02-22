@@ -2,7 +2,7 @@
 
 **Unidade Curricular:** Pesquisa e Recuperação de Informação  
 **Instituição:** Universidade do Minho  
-**Ano letivo:** 2024/2025
+**Ano letivo:** 2025/2026
 
 ---
 
@@ -109,7 +109,7 @@ O projeto é desenvolvido em equipas de **3 a 5 elementos**, organizados em grup
 | **Frontend** | Interface web, integração com API, experiência do utilizador |
 | **DevOps** | Containerização (Docker), CI/CD, testes automatizados, documentação |
 
-> **Nota:** As equipas não são silos. É esperada colaboração transversal, especialmente na integração dos módulos. A avaliação contempla contribuições cruzadas entre grupos.
+> **Nota:** É esperada colaboração transversal entre equipas, especialmente na integração dos módulos. A avaliação contempla contribuições cruzadas entre grupos.
 
 Consulte o ficheiro [`COMTRIBUTING.md`](COMTRIBUTING.md) para instruções detalhadas sobre o fluxo de trabalho com Git e GitHub.
 
@@ -171,7 +171,7 @@ A avaliação final de cada estudante é composta por três componentes:
 |---|---|---|
 | **A — Sucesso global do projeto** | 40% | Qualidade e funcionalidade do produto final integrado |
 | **B — Contribuição técnica individual** | 40% | Qualidade dos *commits*, *pull requests*, revisões de código e gestão de tarefas |
-| **C — Avaliação por pares e entre equipas** | 20% | Avaliação anónima por colegas da mesma equipa e de outras equipas |
+| **C — Avaliação por pares e entre equipas** | 20% | Avaliação anónima por colegas da mesma equipa (e de outras equipas?) |
 
 > Consulte o documento [`docs/internal/Student Evaluation Framework.md`](docs/internal/Student%20Evaluation%20Framework.md) para o detalhe completo dos critérios.
 
@@ -225,20 +225,10 @@ A avaliação final de cada estudante é composta por três componentes:
 - Atualize o repositório com frequência a partir do repositório do docente;
 - Escreva testes antes ou durante o desenvolvimento das funcionalidades.
 
-### ❌ Não faça
-
-- Não faça *push* diretamente para o `main` (use PRs);
-- Não submeta *Pull Requests* para o repositório do docente;
-- Não guarde credenciais, *tokens* ou dados sensíveis no repositório;
-- Não faça *commits* de ficheiros gerados automaticamente (`__pycache__`, `node_modules`, `venv`);
-- Não deixe tudo para o último momento — a consistência dos *commits* é avaliada.
-
----
-
 ## 10. Dúvidas e Suporte
 
 1. **Leia a documentação** — consulte o [`COMTRIBUTING.md`](COMTRIBUTING.md) e a pasta `docs/`;
-2. **Pesquise nas Issues** — a sua dúvida pode já ter resposta;
+2. **Pesquise nas Internet** — a sua dúvida pode já ter resposta;
 3. **Pergunte à equipa** — colabore com os colegas;
 4. **GitHub Discussions** — use para questões gerais e anúncios;
 5. **Aulas e horas de atendimento** — para questões mais complexas, fale com o docente.
