@@ -338,7 +338,7 @@ class UMinhoDSpace8Scraper:
                 full_url = url + "/full"   
                 paper_info = self.get_paper_info(full_url) # get the paper info
 
-                if full_url: 
+                if paper_info: 
                     self.save_incremental(paper_info)                    # add '/full' to get the full metadata view
                     print(f"      Title: {paper_info['title']}")    # Debug print
                     results.append(paper_info)
