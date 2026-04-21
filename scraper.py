@@ -271,15 +271,18 @@ class UMinhoDSpace8Scraper:
 
             # Scroll and Click
             self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", next_button)
-            next_button.click()
+            time.sleep(0.5) # Pequena pausa para a animação do scroll terminar
 
-            # Wait for Angular to swap the content, Slightly longer wait after clicking
-            time.sleep(self.ANGULAR_SETTLE_TIME + 1)
+            # Em vez de next_button.click(), usamos JavaScript para forçar o clique
+            self.driver.execute_script("arguments[0].click();", next_button)
+
+            print("Clicked 'Next'. Waiting for page to load...")
+            time.sleep(self.ANGULAR_SETTLE_TIME + 2) 
             return True
 
-        except NoSuchElementException:
-            # Re-raising the exception so the caller knows to stop the loop
-            raise NoSuchElementException("Reached the last page: 'Next' button is missing or disabled.")
+        except Exception as e:
+    
+            raise NoSuchElementException(f"Reached the last page or failed to click: {e}")
 
     def collect_all_links(self):
         """
