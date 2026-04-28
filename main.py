@@ -46,6 +46,7 @@ def main():
     print(f"Total de {len(final_results)} artigos guardados no ficheiro '{config['output_file']}'.")
 
     # --- 2. FASE DE CONFIGURAÇÃO (enquanto ainda nao esta integrado com interface) ---
+    ############ No caso do modelo booleano estas coisas meti na main ##############
     print(f"\n{'='*20} CONFIGURAÇÃO {'='*20}")
     
     remover_sw = input("Remover Stop Words? (s/n): ").lower() == 's'
