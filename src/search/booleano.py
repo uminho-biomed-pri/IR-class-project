@@ -2,11 +2,15 @@ import re
 import json
 from src.search.nlp import TextProcessor
 
-class modeloBooleano:
-    def __init__(self, remove_stopwords, normalization_method, language):
+class ModeloBooleano:
+    def __init__(self, corpus_processado, remove_stopwords, normalization_method, language):
+        self.corpus= corpus_processado #output do corpusProcessor
+
         self.termos_unicos= [] #lista ordenada de termos (linhas)
-        self.documentos=[] #lista de documentos (colunas)
+        self.documentos=[] #lista de dois dos documentos (colunas)
         self.matriz= [] #matriz termos-documentos
+
+        self.termo_indice={}
 
         self.remove_stopwords = remove_stopwords
         self.normalization_method =normalization_method
@@ -28,64 +32,46 @@ class modeloBooleano:
         Constroi a matriz termo documento, esta corresponde a uma lista de listas, onde cada lista interna corresponde ao vetor
         de um termo único e indica se este existe num documento, 1, ou se não existe no documento, 0
         '''
-
-        try:
-            with open(output_file, 'r', encoding='utf-8') as f:
-                self.documentos = json.load(f)
-        except FileNotFoundError:
-            print(f"Erro: O ficheiro {output_file} não foi encontrado.")
-            return
-
-        ##############DEPOIS ALTERAR PARA USAR O NLP DIRETAMENTE####################################### 
         termos= set()
-        docs_tokens=[]#ccada elemento da lista corresponde ao conjunto de tokens existente em cada documento
+        docs_tokens=[] #cada elemento da lista corresponde ao conjunto de tokens existente em cada documento
 
-        for doc in self.documentos:
-            #há campos tipos os autores que como tem varios sao listas, entao temos de os converter para string     
-            conteudo_completo = []
-            for valor in doc.values():
-                if isinstance(valor, list):
-                    conteudo_completo.append(" ".join(valor))
-                else:
-                    conteudo_completo.append(str(valor))
+        self.documentos = list(self.corpus.keys())
 
-            texto_doc = " ".join(conteudo_completo).lower()
-            tokens = self.nlp.process_text(
-                texto_doc,
-                language=self.language,
-                remove_stopwords=self.remove_stopwords,
-                normalization_method= self.normalization_method
-            )
+        for doi in self.documentos:
+            doc = self.corpus[doi]
 
-            token_set = set(tokens) #para a matriz precisamos do conjunto de tokens, tokens unicos
-            docs_tokens.append(token_set)
-            termos.update(token_set)
+            tokens= doc["tokens_pesquisa"]
+            tokens_set= set(tokens)
+
+            docs_tokens.append(tokens_set)
+            termos.update(tokens_set)
         
         self.termos_unicos= sorted(list(termos)) #termos na matriz ficam ordenados por ordem alfabetica
 
+        for i, termo in enumerate(self.termos_unicos):
+            self.termo_indice[termo]= i
+
         num_docs= len(self.documentos)
+        num_termos= len(self.termos_unicos)
 
-        for termo in self.termos_unicos:
-            #criamos uma linha cheia de zeros inicialmente para cada termo
-            linha= [0] * num_docs
-            
-            for id_doc in range(num_docs):
-                if termo in docs_tokens[id_doc]:
-                    #Se o termo existe nesse documento o valor desse termo nesse documento passa de 0 para 1
-                    linha[id_doc] = 1
+        #inicializar matriz
+        self.matriz =[[0]* num_docs for termo in range(num_termos)]
 
-            self.matriz.append(linha)
+        #preencher a matriz
+        for doc_indice, doc_tokens in enumerate(docs_tokens):
+            for termo in doc_tokens:
+                termo_indice = self.termo_indice[termo]
+                self.matriz[termo_indice][doc_indice] = 1
 
         print(f"Matriz termo-documento construída: {len(self.termos_unicos)} termos x {len(self.documentos)} documentos.")
 
 
-#=========== Resoluções de Querys ===============================================0
+#=========== Resoluções de Querys ===============================================
 
     def obter_linha_termo(self, termo):
         """ Devolve a linha (vetor) correspondente ao termo pesquisado, caso exista, senão o vetor é todo 0's"""
-        termo= termo.lower()
         # de forma a ficar uniformizado, como aplicamos nlp aos termos dos documento, temos tambem de aplicar aos termos da query
-        tokens= self.nlp.process_text(
+        tokens = self.nlp.process_text(
             termo,
             language=self.language,
             remove_stopwords=self.remove_stopwords,
@@ -93,13 +79,15 @@ class modeloBooleano:
         )
 
         if not tokens:
-            return [0] * len(self.documentos) #por exemplo se for uma stopword e o utilizador pediu para remove-las vai devolver uma lista vazia
-        
+            return [0] * len(self.documentos)
+
         termo_proc = tokens[0]
-        
-        if termo_proc in self.termos_unicos:
-            indice_termo= self.termos_unicos.index(termo_proc)
-            return self.matriz[indice_termo]
+    
+        indice= self.termo_indice.get(termo_proc)
+
+        if indice is not None:
+            return self.matriz[indice]
+
         return [0] * len(self.documentos)
     
     
@@ -231,9 +219,11 @@ class modeloBooleano:
         docs_res= []
         for i, bit in enumerate(resultado_binario):
             if bit ==1:
-                docs_res.append(self.documentos[i].get('doi'))
+                docs_res.append(self.documentos[i])
         
         return docs_res
+    
+'''
         
 if __name__ == "__main__":
     remover_sw= input("Deseja remover Stop Words? (s/n)").lower() == 's'
@@ -249,6 +239,6 @@ if __name__ == "__main__":
 
     idioma = input("Idioma (english/portuguese): ").lower()
     
-    modelo = modeloBooleano(remove_stopwords= remover_sw, normalization_method=metodo_norm, language=idioma)
+    modelo = ModeloBooleano(remove_stopwords= remover_sw, normalization_method=metodo_norm, language=idioma)
     caminho_scraper="../../scraper_results.json"
-    modelo.construir_matriz(caminho_scraper)
+    modelo.construir_matriz(caminho_scraper)'''
