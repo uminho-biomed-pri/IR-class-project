@@ -1,0 +1,6 @@
+services:
+  scraper:
+    build: .
+    container_name: uminho-scraper
+    environment:
+      - PYTHONUNBUFFERED=1
